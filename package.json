@@ -1,0 +1,11 @@
+{
+  "name": "qliksensehierarchyfilterpane",
+  "version": "1.0.0",
+  "description": "An extension for qlik sense where you can select a hierarchy and it will list it in a nice tree view",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Thomas Steck",
+  "license": "ISC"
+}

@@ -1,0 +1,15 @@
+{
+	"name": "Hierarchy filterpane",
+	"description": "An extension to represent an hierarchical tree",
+	"type": "visualization",
+	"version": "1.0.0",
+	"icon": "extension",
+	"preview": "update me",
+	"author": "Thomas Steck",
+	"keywords": "qlik-sense",
+	"license": "The MIT License (MIT)",
+	"repository": "",
+	"dependencies": {
+		"qlik-sense": ">=February 2018"
+	}
+}
