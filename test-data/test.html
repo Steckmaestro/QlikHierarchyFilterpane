@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      #hierarchyFilerPane {
+        margin: 0;
+        padding: 0;
+        list-style-type: none;
+      }
+      ul.hierarchy-nested {
+        list-style-type: none;
+      }
+      .hierarchy-caret {
+        cursor: pointer;
+        user-select: none;
+      }
+      .hierarchy-caret::before {
+        content: '\25B6';
+        color: black;
+        display: inline-block;
+        margin-right: 3px;
+      }
+      .hierarchy-caret-down::before {
+        transform: rotate(90deg);
+        transition: all .3s cubic-bezier(.4,0,.2,1);
+      }
+      .hierarchy-nested {
+        display: none;
+      }
+      .hierarchy-active {
+        padding-left: 15px;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <ul id="hierarchyFilerPane">
+      <li class="list-item">
+        <span class="hierarchy-caret">Europe</span>
+        <ul class="hierarchy-nested">
+          <li class="list-item">
+            <span class="hierarchy-caret">Germany</span>
+            <ul class="hierarchy-nested">
+              <li class="list-item">Munich</li>
+            </ul>
+          </li>
+          <li class="list-item">
+            <span class="hierarchy-caret">UK</span>
+            <ul class="hierarchy-nested">
+              <li class="list-item">London</li>
+            </ul>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </body>
+  <script>
+    console.log('test!');
+    var toggler = document.getElementsByClassName('hierarchy-caret');
+    var i;
+
+    console.log('Toggler ', toggler, toggler.length);
+
+    for (i = 0; i < toggler.length; i++) {
+      toggler[i].addEventListener('click', function() {
+        console.log('Element pressed: ', toggler[i]);
+        this.parentElement.querySelector('.hierarchy-nested').classList.toggle('hierarchy-active');
+        this.classList.toggle('hierarchy-caret-down');
+      });
+    }
+  </script>
+</html>

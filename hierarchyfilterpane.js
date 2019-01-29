@@ -201,10 +201,9 @@ function renderChart(tree, element, object_id, treeProperties) {
         }
       }
       if (hasChildren) {
-        html += '<li class="hierarchy-folder">\n';
-        html += '<label for="' + objId + '">' + object.name + '</label>\n';
-        html += '<input type="checkbox" id="' + objId + '" />\n';
-        html += '<ul>\n';
+        html += '<li>\n';
+        html += '<span class="hierarchy-caret">' + object.name + '</span>\n';
+        html += '<ul class="hierarchy-nested">\n';
         //... and call self for every object
         html = listHtml(object.children, html);
         html += '</ul>\n';
@@ -212,7 +211,7 @@ function renderChart(tree, element, object_id, treeProperties) {
         return html;
       } else {
         // Add leaf
-        html += '<li class ="hierarchy-leaf">' + object.name + '</li>\n';
+        html += '<li>' + object.name + '</li>\n';
         return html;
       }
     }
@@ -223,13 +222,22 @@ function renderChart(tree, element, object_id, treeProperties) {
   $html.addClass('hierarchyFilterPane');
   $(element).empty();
 
-  var html = '<ul class="hierarchy-tree">';
+  var html = '<ul id="hierarchyFilerPane">';
   html = listHtml(tree, html);
   html += '</ul>';
 
   debugger;
 
   $(element).append(html);
+
+  var toggler = document.getElementsByClassName('hierarchy-caret');
+
+  for (var i = 0; i < toggler.length; i++) {
+    toggler[i].addEventListener('click', function() {
+      this.parentElement.querySelector('.hierarchy-nested').classList.toggle('hierarchy-active');
+      this.classList.toggle('hierarchy-caret-down');
+    });
+  }
 
   // Add custom CSS
   //element(document.querySelector('.data-table .row-wrapper')).css('top', '0');

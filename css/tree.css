@@ -1,1 +1,29 @@
-/* 
+#hierarchyFilerPane {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+ul.hierarchy-nested {
+  list-style-type: none;
+}
+.hierarchy-caret {
+  cursor: pointer;
+  user-select: none;
+}
+.hierarchy-caret::before {
+  content: '\25B6';
+  color: black;
+  display: inline-block;
+  margin-right: 3px;
+}
+.hierarchy-caret-down::before {
+  transform: rotate(90deg);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hierarchy-nested {
+  display: none;
+}
+.hierarchy-active {
+  padding-left: 15px;
+  display: block;
+}
