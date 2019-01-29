@@ -1,4 +1,8 @@
-define(['qlik', './extension-properties', './js/tree'], function(qlik, extension_properties, tree) {
+define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], function(
+  qlik,
+  extension_properties,
+  tree
+) {
   return {
     initialProperties: {
       version: 1.0,
@@ -155,9 +159,6 @@ function launchTree(treeData, element, object_id, treeProperties) {
 
     var tree = growTree(unordered_leafs, maxDepth, minDepth);
 
-    // Check tree
-    //debugger;
-
     renderChart(tree, element, object_id, treeProperties);
   } else {
     //something is missing, better not load the hypercube
@@ -178,58 +179,20 @@ function launchTree(treeData, element, object_id, treeProperties) {
 }
 
 function renderChart(tree, element, object_id, treeProperties) {
-  $html = $(document.createElement('div'));
-  $html.attr('id', object_id);
-  $html.addClass('hierarchyFilterPane');
-  $(element).empty();
-
+  // Recursive function to generate HTML from tree
   function listHtml(object, html) {
     debugger;
-
-    if (object.depth === '1') {
-      // Create tree anchor
-      $anchor = $(document.createElement('ul'));
-      $anchor.attr('id', 'hierarchy-anchor');
-      $anchor.addClass('hierarchy-tree');
-
-      // Anchor is leaf
-      if (typeof object.children === 'undefined') {
-        // Create li
-        $li = $(document.createElement('li'));
-        $li.addClass('hierarchy-leaf');
-        $li.html(object.name);
-        $anchor.append($li);
-
-        return $anchor;
-      } else {
-        // Create li > label > input type
-        $li = $(document.createElement('li'));
-        $label = $(document.createElement('label'));
-        var objId = object.depth + '-' + object.name;
-        $label.attr('for', objId);
-        $label.html(objId);
-        $input = $(document.createElement('input'));
-        $($input)[0].checked = true;
-        $input.attr('id', objId);
-        $anchor.append($li);
-        $li.append($label);
-        $li.append($input);
-        $ul = $(document.createElement('ul'));
-        $li.append($ul);
-
-        // Call self with array pass existing html
-        return listHtml(object.children, $ul);
-      }
-    }
-
+    // If Array (i.e. parent)
     if (object instanceof Array) {
+      //... and call self for every object
       for (var i = 0; i < object.length; i++) {
-        return listHtml(object[i], html);
+        html = listHtml(object[i], html);
       }
+      return html;
     } else if (object instanceof Object) {
+      var objId = object.name + '-' + object.depth;
       var objectKeys = Object.keys(object);
       var hasChildren = false;
-
       // Check if our object has children
       for (var j = 0; j < objectKeys.length; j++) {
         if (objectKeys[j] === 'children' && object[objectKeys[j]] instanceof Array) {
@@ -237,63 +200,37 @@ function renderChart(tree, element, object_id, treeProperties) {
           break;
         }
       }
-
-      if (hasChildren === true) {
-        // Create li > label > input type
-        $li = $(document.createElement('li'));
-        $label = $(document.createElement('label'));
-        var objId = object.depth + '-' + object.name;
-        $label.attr('for', objId);
-        $label.html(objId);
-        $input = $(document.createElement('input'));
-        $($input)[0].checked = true;
-        $input.attr('id', objId);
-        html.append($li);
-        $li.append($label);
-        $li.append($input);
-        $ul = $(document.createElement('ul'));
-        $li.append($ul);
-
-        // Call self with array pass existing html
-        return listHtml(object.children, $ul);
+      if (hasChildren) {
+        html += '<li class="hierarchy-folder">\n';
+        html += '<label for="' + objId + '">' + object.name + '</label>\n';
+        html += '<input type="checkbox" id="' + objId + '" />\n';
+        html += '<ul>\n';
+        //... and call self for every object
+        html = listHtml(object.children, html);
+        html += '</ul>\n';
+        html += '</li>\n';
+        return html;
       } else {
-        // Create li
-        $li = $(document.createElement('li'));
-        $li.addClass('hierarchy-leaf');
-        $li.html(object.name);
-        html.append($li);
+        // Add leaf
+        html += '<li class ="hierarchy-leaf">' + object.name + '</li>\n';
         return html;
       }
     }
   }
 
-  $hierarchy = listHtml(tree);
+  $html = $(document.createElement('div'));
+  $html.attr('id', object_id);
+  $html.addClass('hierarchyFilterPane');
+  $(element).empty();
+
+  var html = '<ul class="hierarchy-tree">';
+  html = listHtml(tree, html);
+  html += '</ul>';
 
   debugger;
 
-  $(element).append($hierarchy);
-}
+  $(element).append(html);
 
-//   html += '<ul class=\"anchor\">';
-//   html += '<li class=\"1-' + object.depth'\">' + object.name + '</li>';
-//   listHtml(object.children);
-//   html += '</ul>';
-// } else {
-//   if (object instanceof Array) {
-//     html += '<ul>';
-//     for (var i = 0; i < object.length; i++) {
-//       listHtml(object[i]);
-//     }
-//     html += '</ul>';
-//   } else if (object instanceof Object) {
-//     var objectKeys = Object.keys(object);
-//     for (var j = 0; j < objectKeys.length; j++) {
-//       if (objectKeys[j] === 'name') {
-//         html += '<li>' + object.name + '</li>';
-//       } else if (objectKeys[j] === 'children' && object[objectKeys[j]] instanceof Array) {
-//         listHtml(object[objectKeys[j]]);
-//       }
-//     }
-//   }
-// }
-// }
+  // Add custom CSS
+  //element(document.querySelector('.data-table .row-wrapper')).css('top', '0');
+}
