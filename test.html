@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      li input {
+        position: absolute;
+        left: 0;
+        margin-left: 0;
+        opacity: 0;
+        z-index: 2;
+        cursor: pointer;
+        height: 1em;
+        width: 1em;
+        top: 0;
+      }
+      li label {
+        background: url(folder-horizontal.png) 15px 1px no-repeat;
+        cursor: pointer;
+        display: block;
+        padding-left: 37px;
+      }
+    </style>
+  </head>
+  <body>
+    <ul>
+      <li class="file"><a href="document.pdf">File 1</a></li>
+      <li>
+        <label for="subfolder1">Subfolder 1</label> <input type="checkbox" id="subfolder1" />
+        <ul>
+          <li class="file"><a href="">File 2</a></li>
+          <li class="file"><a href="">File 2</a></li>
+          <li class="file"><a href="">File 2</a></li>
+        </ul>
+      </li>
+    </ul>
+  </body>
+</html>

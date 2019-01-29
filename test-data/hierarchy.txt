@@ -3,4 +3,4 @@ NodeID,ParentID,NodeName,NodeName1,NodeName2,NodeName3,ParentName,PathName,Depth
 2,3,Munich,Europe,Germany,Munich,Germany,Europe\Germany\Munich,3
 3,5,Germany,Europe,Germany,-,Europe,Europe\Germany,2
 4,5,UK,Europe,UK,-,Europe,Europe\UK,2
-5,Europe,Europe,-,-,-,Europe,1
+5,,Europe,Europe,-,-,-,Europe,1

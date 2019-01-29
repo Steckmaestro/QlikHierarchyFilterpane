@@ -60,6 +60,8 @@ function nodeJsonReady(node) {
   if (node.childs.length > 0)
     return {
       name: node.name,
+      nodeId: node.node_id,
+      parentId: node.parent_id,
       children: node.childs,
       size: node.measure,
       depth: node.depth,
@@ -67,8 +69,12 @@ function nodeJsonReady(node) {
     };
   return {
     name: node.name,
+    nodeId: node.node_id,
+    parentId: node.parent_id,
     size: node.measure,
     depth: node.depth,
     qElemNumber: node.qElemNumber,
   };
 }
+
+// Tree traversal code
