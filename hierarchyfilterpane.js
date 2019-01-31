@@ -19,12 +19,18 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
       },
       selectionMode: 'CONFIRM',
     },
-    support: { snapshot: true },
-
+    // Property panel
     definition: extension_properties,
-
     paint: function($element, layout) {
-      app = qlik.currApp();
+      // debugger;
+
+      // Declaring global variables
+      var app = qlik.currApp();
+      var _this = this;
+      var selState = app.selectionState();
+      var divName = layout.qInfo.qId;
+      var vw = $element.width();
+      var vh = $element.height();
 
       // Check if all values are correctly set
       if (
@@ -67,20 +73,19 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
         var treeProperties = {
           treeStructure: layout.properties.treeStructure,
         };
-        // Check treeProperties
-        // debugger;
 
+        // FIXME: Add later support
         var qSortCriteriasContents = {
           qSortByNumeric: treeProperties.treeStructure.nodeDepthSort == 'Ascending' ? 1 : -1,
         };
 
-        // $element.html( "Data without measures" );
         app.createCube(
           {
             qDimensions: [
               {
                 qDef: {
                   qFieldDefs: ['=' + treeProperties.treeStructure.nodeDepth],
+                  // FIXME: Add later support
                   qSortCriterias: [qSortCriteriasContents],
                 },
               },
@@ -92,9 +97,7 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
             qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
           },
           function(reply) {
-            // Check reply
-            // debugger;
-            launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties);
+            launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties, _this, app);
           }
         );
       }
@@ -102,9 +105,9 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
   };
 });
 
-function launchTree(treeData, element, object_id, treeProperties) {
+function launchTree(treeData, element, object_id, treeProperties, _this, app) {
   // Check launch tree properties
-  //debugger;
+  // debugger;
   var maxDepth = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 1][0].qText;
   var maxDepthExpected = 0;
   if (treeData.qHyperCube.qSize.qcy > 1)
@@ -159,7 +162,7 @@ function launchTree(treeData, element, object_id, treeProperties) {
 
     var tree = growTree(unordered_leafs, maxDepth, minDepth);
 
-    renderChart(tree, element, object_id, treeProperties);
+    renderChart(tree, element, object_id, treeProperties, _this, app);
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
@@ -178,10 +181,10 @@ function launchTree(treeData, element, object_id, treeProperties) {
   }
 }
 
-function renderChart(tree, element, object_id, treeProperties) {
+function renderChart(tree, element, object_id, treeProperties, _this, app) {
+  // debugger;
   // Recursive function to generate HTML from tree
   function listHtml(object, html) {
-    debugger;
     // If Array (i.e. parent)
     if (object instanceof Array) {
       //... and call self for every object
@@ -201,8 +204,13 @@ function renderChart(tree, element, object_id, treeProperties) {
         }
       }
       if (hasChildren) {
-        html += '<li>\n';
-        html += '<span class="hierarchy-caret">' + object.name + '</span>\n';
+        html += '<li class="hierarchy-item" data-value="' + object.qElemNumber + '">\n';
+        html +=
+          '<span id="hierarchy-id-' +
+          object.qElemNumber +
+          '" class="hierarchy-caret hierarchy-name" >' +
+          object.name +
+          '</span>\n';
         html += '<ul class="hierarchy-nested">\n';
         //... and call self for every object
         html = listHtml(object.children, html);
@@ -211,8 +219,58 @@ function renderChart(tree, element, object_id, treeProperties) {
         return html;
       } else {
         // Add leaf
-        html += '<li>' + object.name + '</li>\n';
+        html +=
+          '<li id="hierarchy-id-' +
+          object.qElemNumber +
+          '" class="hierarchy-item hierarchy-leaf" data-value="' +
+          object.qElemNumber +
+          '">' +
+          '<span id="hierarchy-id-' +
+          object.qElemNumber +
+          '" class="hierarchy-name">' +
+          object.name +
+          '</span>' +
+          '</li>\n';
         return html;
+      }
+    }
+  }
+
+  function selectData(node) {
+    var names = [];
+    var nameIdx = [];
+    var getNodeNames = function(node) {
+      names.push({
+        qText: node.name,
+      });
+      nameIdx.push(node.qElemNumber);
+      if (node.children) {
+        for (var i = 0; i != node.children.length; i++) {
+          getNodeNames(node.children[i]);
+        }
+      }
+      return names;
+    };
+    var selectedElements = getNodeNames(node);
+    var nodeNameField = app.field(treeProperties.treeStructure.nodeName);
+    nodeNameField.clear();
+    nodeNameField.selectValues(selectedElements, false, false);
+    // debugger;
+  }
+
+  function findNodeInTree(node, qElemNbr) {
+    if (node instanceof Array) {
+      var result = null;
+      for (var i = 0; i < node.length; i++) {
+        result = findNodeInTree(node[i], qElemNbr);
+        if (result) return result;
+      }
+      return result;
+    } else if (node instanceof Object) {
+      if (node.qElemNumber === qElemNbr) {
+        return node;
+      } else if (node.hasOwnProperty('children')) {
+        return findNodeInTree(node.children, qElemNbr);
       }
     }
   }
@@ -221,24 +279,115 @@ function renderChart(tree, element, object_id, treeProperties) {
   $html.attr('id', object_id);
   $html.addClass('hierarchyFilterPane');
   $(element).empty();
+  $(element).append($html);
+
+  //Create Tooltip for additional information display when over the node
+  $divToolTip = $(document.createElement('div'));
+  $divToolTip.attr('id', 'tooltip');
+
+  $divToolTip.css({
+    backgroundColor: 'white',
+    color: '#000',
+    opacity: 0,
+    position: 'absolute',
+    border: '1px solid #dbdbdb',
+  });
+  $html.append($divToolTip);
+
+  $divToolTipContent = $(document.createElement('div')); //contents configuration
+  $divToolTipContent.attr('id', 'tooltipcontent');
+  $divToolTipContent.css({
+    color: '#000',
+    font: '11px sans-serif',
+    'text-align': 'left',
+    padding: '7px',
+  });
+  $divToolTipContent.html('Click to expand node and doubleclick to select.');
+  $divToolTip.append($divToolTipContent);
 
   var html = '<ul id="hierarchyFilerPane">';
   html = listHtml(tree, html);
   html += '</ul>';
 
-  debugger;
+  $(element).html(html);
 
-  $(element).append(html);
+  $(element)
+    .find('.hierarchy-name')
+    .hover(
+      function(event) {
+        if (event.currentTarget.id.length > 0) {
+          $('#' + event.currentTarget.id).css({
+            cursor: 'pointer',
+            'background-color': '#D3D3D3',
+          });
+        }
+      },
+      function(event) {
+        if (event.currentTarget.id.length > 0) {
+          $('#' + event.currentTarget.id).css({
+            cursor: 'none',
+            'background-color': 'transparent',
+          });
+        }
+      }
+    );
 
-  var toggler = document.getElementsByClassName('hierarchy-caret');
+  $(element)
+    .find('.hierarchy-name')
+    .click(function(event) {
+      if (event.target.id.length > 0) {
+        var element = $('#' + event.target.id);
+        // debugger;
+        // console.log('(event) Click. Is it clicked? ', $(this).hasClass('hierarchy-clicked'));
+        if (element.hasClass('hierarchy-clicked')) {
+          element.removeClass('hierarchy-clicked');
+          if (element[0].hasAttribute('data-value')) {
+            // Value is the same as qElementNum in tree
+            var value = parseInt(element[0].getAttribute('data-value'), 10);
+            var selectedNode = findNodeInTree(tree, value);
+            selectData(selectedNode);
+            // debugger;
+            // FIXME: Selection coloring not working!!!
+            // element[0].classList.toggle('hierarchy-selected');
+          } else if (element[0].parentElement.hasAttribute('data-value')) {
+            // Value is the same as qElementNum in tree
+            var value = parseInt(element[0].parentElement.getAttribute('data-value'), 10);
+            var selectedNode = findNodeInTree(tree, value);
+            selectData(selectedNode);
+            // debugger;
+            // FIXME: Selection coloring not working!!!
+            // element[0].classList.toggle('hierarchy-selected');
+          }
+        } else {
+          element.addClass('hierarchy-clicked');
+          setTimeout(
+            function() {
+              // debugger;
+              if ($(this).hasClass('hierarchy-clicked')) {
+                $(this).removeClass('hierarchy-clicked');
 
-  for (var i = 0; i < toggler.length; i++) {
-    toggler[i].addEventListener('click', function() {
-      this.parentElement.querySelector('.hierarchy-nested').classList.toggle('hierarchy-active');
-      this.classList.toggle('hierarchy-caret-down');
+                var item = $(this)[0];
+                var itemNested = item.parentElement.querySelector('.hierarchy-nested');
+                // Can't expand leaf items
+                if (item !== null && itemNested !== null) {
+                  itemNested.classList.toggle('hierarchy-active');
+                  item.classList.toggle('hierarchy-caret-down');
+                }
+              }
+            }.bind(element),
+            300
+          );
+        }
+      }
     });
-  }
 
-  // Add custom CSS
-  //element(document.querySelector('.data-table .row-wrapper')).css('top', '0');
+  // Add expand functionality
+  // $(element)
+  //   .find('.hierarchy-caret')
+  //   .click(function() {
+  //     console.log('(event) Click: ', $(this));
+  //     console.log('event object: ', event);
+  //     this.parentElement.querySelector('.hierarchy-nested').classList.toggle('hierarchy-active');
+  //     this.classList.toggle('hierarchy-caret-down');
+  //   });
 }
