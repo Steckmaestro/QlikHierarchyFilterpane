@@ -26,11 +26,7 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
 
       // Declaring global variables
       var app = qlik.currApp();
-      var _this = this;
-      var selState = app.selectionState();
-      var divName = layout.qInfo.qId;
-      var vw = $element.width();
-      var vh = $element.height();
+      // var _this = this;
 
       // Check if all values are correctly set
       if (
@@ -97,7 +93,8 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
             qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
           },
           function(reply) {
-            launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties, _this, app);
+            var element = launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties);
+            addEventsChart(element);
           }
         );
       }
@@ -162,7 +159,8 @@ function launchTree(treeData, element, object_id, treeProperties, _this, app) {
 
     var tree = growTree(unordered_leafs, maxDepth, minDepth);
 
-    renderChart(tree, element, object_id, treeProperties, _this, app);
+    var html = renderChart(tree, element, object_id, treeProperties);
+    return html;
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
@@ -181,8 +179,7 @@ function launchTree(treeData, element, object_id, treeProperties, _this, app) {
   }
 }
 
-function renderChart(tree, element, object_id, treeProperties, _this, app) {
-  // debugger;
+function renderChart(tree, element, object_id, treeProperties) {
   // Recursive function to generate HTML from tree
   function listHtml(object, html) {
     // If Array (i.e. parent)
@@ -235,7 +232,22 @@ function renderChart(tree, element, object_id, treeProperties, _this, app) {
       }
     }
   }
+  $html = $(document.createElement('div'));
+  $html.attr('id', object_id);
+  $html.addClass('hierarchyFilterPane');
+  $(element).empty();
+  $(element).append($html);
 
+  var html = '<ul id="hierarchyFilerPane">';
+  html = listHtml(tree, html);
+  html += '</ul>';
+
+  $(element).html(html);
+
+  return $(element);
+}
+
+function addEventsChart(element) {
   function selectData(node) {
     var names = [];
     var nameIdx = [];
@@ -274,42 +286,6 @@ function renderChart(tree, element, object_id, treeProperties, _this, app) {
       }
     }
   }
-
-  $html = $(document.createElement('div'));
-  $html.attr('id', object_id);
-  $html.addClass('hierarchyFilterPane');
-  $(element).empty();
-  $(element).append($html);
-
-  //Create Tooltip for additional information display when over the node
-  $divToolTip = $(document.createElement('div'));
-  $divToolTip.attr('id', 'tooltip');
-
-  $divToolTip.css({
-    backgroundColor: 'white',
-    color: '#000',
-    opacity: 0,
-    position: 'absolute',
-    border: '1px solid #dbdbdb',
-  });
-  $html.append($divToolTip);
-
-  $divToolTipContent = $(document.createElement('div')); //contents configuration
-  $divToolTipContent.attr('id', 'tooltipcontent');
-  $divToolTipContent.css({
-    color: '#000',
-    font: '11px sans-serif',
-    'text-align': 'left',
-    padding: '7px',
-  });
-  $divToolTipContent.html('Click to expand node and doubleclick to select.');
-  $divToolTip.append($divToolTipContent);
-
-  var html = '<ul id="hierarchyFilerPane">';
-  html = listHtml(tree, html);
-  html += '</ul>';
-
-  $(element).html(html);
 
   $(element)
     .find('.hierarchy-name')
@@ -380,14 +356,4 @@ function renderChart(tree, element, object_id, treeProperties, _this, app) {
         }
       }
     });
-
-  // Add expand functionality
-  // $(element)
-  //   .find('.hierarchy-caret')
-  //   .click(function() {
-  //     console.log('(event) Click: ', $(this));
-  //     console.log('event object: ', event);
-  //     this.parentElement.querySelector('.hierarchy-nested').classList.toggle('hierarchy-active');
-  //     this.classList.toggle('hierarchy-caret-down');
-  //   });
 }
