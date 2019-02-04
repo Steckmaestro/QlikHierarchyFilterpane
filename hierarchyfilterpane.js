@@ -93,8 +93,7 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
             qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
           },
           function(reply) {
-            var element = launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties);
-            addEventsChart(element);
+            launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties, app);
           }
         );
       }
@@ -102,14 +101,22 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
   };
 });
 
-function launchTree(treeData, element, object_id, treeProperties, _this, app) {
+function launchTree(treeData, element, object_id, treeProperties, app) {
   // Check launch tree properties
   // debugger;
-  var maxDepth = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 1][0].qText;
+  // var maxDepth = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 1][0].qText;
+
+  // TODO: Try to use this instead. 
+  var maxDepth = treeData.qHyperCube.qDimensionInfo[0].qMax;
+
   var maxDepthExpected = 0;
   if (treeData.qHyperCube.qSize.qcy > 1)
     maxDepthExpected = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 2][0].qText;
-  var minDepth = treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qText;
+  // var minDepth = treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qText;
+
+  // TODO: Try to use this instead. 
+  var minDepth = treeData.qHyperCube.qDimensionInfo[0].qMin;
+  
   var unordered_leafs = new Array();
   var node_id = 'global leaf #';
   var iterator = 0;
@@ -118,7 +125,8 @@ function launchTree(treeData, element, object_id, treeProperties, _this, app) {
   var load_tree = true;
 
   //some check-ups before loading the tree
-  if (treeData.qHyperCube.qDataPages[0].qMatrix.length == 1) {
+  // changed to ===
+  if (treeData.qHyperCube.qDataPages[0].qMatrix.length === 1) {
     if (
       treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qIsNull ||
       treeData.qHyperCube.qDataPages[0].qMatrix[0][1].qIsNull
@@ -158,9 +166,9 @@ function launchTree(treeData, element, object_id, treeProperties, _this, app) {
     }
 
     var tree = growTree(unordered_leafs, maxDepth, minDepth);
+    var html = renderChart(tree, element, object_id);
+    addEventsToChart(html, tree, treeProperties, app);
 
-    var html = renderChart(tree, element, object_id, treeProperties);
-    return html;
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
@@ -179,7 +187,7 @@ function launchTree(treeData, element, object_id, treeProperties, _this, app) {
   }
 }
 
-function renderChart(tree, element, object_id, treeProperties) {
+function renderChart(tree, element, object_id) {
   // Recursive function to generate HTML from tree
   function listHtml(object, html) {
     // If Array (i.e. parent)
@@ -217,9 +225,7 @@ function renderChart(tree, element, object_id, treeProperties) {
       } else {
         // Add leaf
         html +=
-          '<li id="hierarchy-id-' +
-          object.qElemNumber +
-          '" class="hierarchy-item hierarchy-leaf" data-value="' +
+          '<li class="hierarchy-item hierarchy-leaf" data-value="' +
           object.qElemNumber +
           '">' +
           '<span id="hierarchy-id-' +
@@ -247,7 +253,7 @@ function renderChart(tree, element, object_id, treeProperties) {
   return $(element);
 }
 
-function addEventsChart(element) {
+function addEventsToChart(element, tree, treeProperties, app) {
   function selectData(node) {
     var names = [];
     var nameIdx = [];
@@ -291,16 +297,17 @@ function addEventsChart(element) {
     .find('.hierarchy-name')
     .hover(
       function(event) {
-        if (event.currentTarget.id.length > 0) {
-          $('#' + event.currentTarget.id).css({
+        console.log('Hover event ', event);
+        if (event.target.id.length > 0) {
+          $('#' + event.target.id).css({
             cursor: 'pointer',
             'background-color': '#D3D3D3',
           });
         }
       },
       function(event) {
-        if (event.currentTarget.id.length > 0) {
-          $('#' + event.currentTarget.id).css({
+        if (event.target.id.length > 0) {
+          $('#' + event.target.id).css({
             cursor: 'none',
             'background-color': 'transparent',
           });

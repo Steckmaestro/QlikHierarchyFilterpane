@@ -12,10 +12,6 @@ function node(node_id, element_id, parent_id, name, measure, depth, qElemNumber)
   };
 }
 
-/*
-TODO: EDIT!!!
-*/
-
 //returns a full tree based on an array of leafs and the tree's maximum depth
 function growTree(leafs, max_depth, min_depth) {
   var tree = [];
@@ -76,5 +72,3 @@ function nodeJsonReady(node) {
     qElemNumber: node.qElemNumber,
   };
 }
-
-// Tree traversal code
