@@ -26,7 +26,7 @@
       }
       .hierarchy-caret-down::before {
         transform: rotate(90deg);
-        transition: all .3s cubic-bezier(.4,0,.2,1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .hierarchy-nested {
         display: none;
@@ -39,19 +39,23 @@
   </head>
   <body>
     <ul id="hierarchyFilerPane">
-      <li class="list-item">
-        <span class="hierarchy-caret">Europe</span>
-        <ul class="hierarchy-nested">
-          <li class="list-item">
-            <span class="hierarchy-caret">Germany</span>
-            <ul class="hierarchy-nested">
-              <li class="list-item">Munich</li>
+      <li class="hierarchy-item" data-value="5">
+        <span id="hierarchy-id-5" class="hierarchy-caret-down hierarchy-name">Europe</span>
+        <ul class="hierarchy-nested hierarchy-active">
+          <li class="hierarchy-item" data-value="1">
+            <span id="hierarchy-id-1" class="hierarchy-caret-down hierarchy-name">Denmark</span>
+            <ul class="hierarchy-nested hierarchy-active">
+              <li class="hierarchy-item hierarchy-leaf" data-value="2">
+                <span id="hierarchy-id-2" class="hierarchy-name">Copenhagen</span>
+              </li>
             </ul>
           </li>
-          <li class="list-item">
-            <span class="hierarchy-caret">UK</span>
-            <ul class="hierarchy-nested">
-              <li class="list-item">London</li>
+          <li class="hierarchy-item" data-value="4">
+            <span id="hierarchy-id-4" class="hierarchy-caret-down hierarchy-name">Sweden</span>
+            <ul class="hierarchy-nested hierarchy-active">
+              <li class="hierarchy-item hierarchy-leaf" data-value="0">
+                <span id="hierarchy-id-0" class="hierarchy-name">Malmo</span>
+              </li>
             </ul>
           </li>
         </ul>

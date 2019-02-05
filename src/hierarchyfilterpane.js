@@ -1,4 +1,4 @@
-define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], function(
+define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], function(
   qlik,
   extension_properties,
   tree
@@ -22,11 +22,9 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
     // Property panel
     definition: extension_properties,
     paint: function($element, layout) {
-      // debugger;
 
       // Declaring global variables
       var app = qlik.currApp();
-      // var _this = this;
 
       // Check if all values are correctly set
       if (
@@ -102,30 +100,19 @@ define(['qlik', './extension-properties', './js/tree', 'css!./css/tree.css'], fu
 });
 
 function launchTree(treeData, element, object_id, treeProperties, app) {
-  // Check launch tree properties
-  // debugger;
-  // var maxDepth = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 1][0].qText;
-
-  // TODO: Try to use this instead. 
   var maxDepth = treeData.qHyperCube.qDimensionInfo[0].qMax;
-
   var maxDepthExpected = 0;
-  if (treeData.qHyperCube.qSize.qcy > 1)
+  if (treeData.qHyperCube.qSize.qcy > 1) {
     maxDepthExpected = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 2][0].qText;
-  // var minDepth = treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qText;
-
-  // TODO: Try to use this instead. 
+  }
   var minDepth = treeData.qHyperCube.qDimensionInfo[0].qMin;
-  
   var unordered_leafs = new Array();
   var node_id = 'global leaf #';
   var iterator = 0;
   var tree_depth, row_nr;
-
   var load_tree = true;
 
   //some check-ups before loading the tree
-  // changed to ===
   if (treeData.qHyperCube.qDataPages[0].qMatrix.length === 1) {
     if (
       treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qIsNull ||
@@ -166,9 +153,8 @@ function launchTree(treeData, element, object_id, treeProperties, app) {
     }
 
     var tree = growTree(unordered_leafs, maxDepth, minDepth);
-    var html = renderChart(tree, element, object_id);
+    var html = renderChart(tree, element, treeProperties, object_id);
     addEventsToChart(html, tree, treeProperties, app);
-
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
@@ -187,7 +173,20 @@ function launchTree(treeData, element, object_id, treeProperties, app) {
   }
 }
 
-function renderChart(tree, element, object_id) {
+function renderChart(tree, element, treeProperties, object_id) {
+  // Check collapse
+  var collapseLevel = (function() {
+    if (treeProperties.treeStructure.defineCollapseLevel) {
+      if (!isNaN(treeProperties.treeStructure.collapseLevel)) {
+        return treeProperties.treeStructure.collapseLevel;
+      } else {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  })();
+
   // Recursive function to generate HTML from tree
   function listHtml(object, html) {
     // If Array (i.e. parent)
@@ -210,18 +209,33 @@ function renderChart(tree, element, object_id) {
       }
       if (hasChildren) {
         html += '<li class="hierarchy-item" data-value="' + object.qElemNumber + '">\n';
-        html +=
-          '<span id="hierarchy-id-' +
-          object.qElemNumber +
-          '" class="hierarchy-caret hierarchy-name" >' +
-          object.name +
-          '</span>\n';
-        html += '<ul class="hierarchy-nested">\n';
-        //... and call self for every object
-        html = listHtml(object.children, html);
-        html += '</ul>\n';
-        html += '</li>\n';
-        return html;
+        if (collapseLevel === null || object.depth > collapseLevel) {
+          html +=
+            '<span id="hierarchy-id-' +
+            object.qElemNumber +
+            '" class="hierarchy-caret hierarchy-name" >' +
+            object.name +
+            '</span>\n';
+          html += '<ul class="hierarchy-nested">\n';
+          //... and call self for every object
+          html = listHtml(object.children, html);
+          html += '</ul>\n';
+          html += '</li>\n';
+          return html;
+        } else {
+          html +=
+            '<span id="hierarchy-id-' +
+            object.qElemNumber +
+            '" class="hierarchy-caret hierarchy-name hierarchy-caret-down" >' +
+            object.name +
+            '</span>\n';
+          html += '<ul class="hierarchy-nested hierarchy-active">\n';
+          //... and call self for every object
+          html = listHtml(object.children, html);
+          html += '</ul>\n';
+          html += '</li>\n';
+          return html;
+        }
       } else {
         // Add leaf
         html +=
@@ -273,7 +287,6 @@ function addEventsToChart(element, tree, treeProperties, app) {
     var nodeNameField = app.field(treeProperties.treeStructure.nodeName);
     nodeNameField.clear();
     nodeNameField.selectValues(selectedElements, false, false);
-    // debugger;
   }
 
   function findNodeInTree(node, qElemNbr) {
@@ -295,33 +308,9 @@ function addEventsToChart(element, tree, treeProperties, app) {
 
   $(element)
     .find('.hierarchy-name')
-    .hover(
-      function(event) {
-        console.log('Hover event ', event);
-        if (event.target.id.length > 0) {
-          $('#' + event.target.id).css({
-            cursor: 'pointer',
-            'background-color': '#D3D3D3',
-          });
-        }
-      },
-      function(event) {
-        if (event.target.id.length > 0) {
-          $('#' + event.target.id).css({
-            cursor: 'none',
-            'background-color': 'transparent',
-          });
-        }
-      }
-    );
-
-  $(element)
-    .find('.hierarchy-name')
     .click(function(event) {
       if (event.target.id.length > 0) {
         var element = $('#' + event.target.id);
-        // debugger;
-        // console.log('(event) Click. Is it clicked? ', $(this).hasClass('hierarchy-clicked'));
         if (element.hasClass('hierarchy-clicked')) {
           element.removeClass('hierarchy-clicked');
           if (element[0].hasAttribute('data-value')) {
@@ -329,26 +318,18 @@ function addEventsToChart(element, tree, treeProperties, app) {
             var value = parseInt(element[0].getAttribute('data-value'), 10);
             var selectedNode = findNodeInTree(tree, value);
             selectData(selectedNode);
-            // debugger;
-            // FIXME: Selection coloring not working!!!
-            // element[0].classList.toggle('hierarchy-selected');
           } else if (element[0].parentElement.hasAttribute('data-value')) {
             // Value is the same as qElementNum in tree
             var value = parseInt(element[0].parentElement.getAttribute('data-value'), 10);
             var selectedNode = findNodeInTree(tree, value);
             selectData(selectedNode);
-            // debugger;
-            // FIXME: Selection coloring not working!!!
-            // element[0].classList.toggle('hierarchy-selected');
           }
         } else {
           element.addClass('hierarchy-clicked');
           setTimeout(
             function() {
-              // debugger;
               if ($(this).hasClass('hierarchy-clicked')) {
                 $(this).removeClass('hierarchy-clicked');
-
                 var item = $(this)[0];
                 var itemNested = item.parentElement.querySelector('.hierarchy-nested');
                 // Can't expand leaf items

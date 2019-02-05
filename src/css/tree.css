@@ -1,21 +1,28 @@
 #hierarchyFilerPane {
+  overflow: auto;
   margin: 0;
   padding: 0;
   list-style-type: none;
+}
+.hierarchy-name:hover {
+  background:
+     linear-gradient(
+       to right,
+       rgb(0,240,16) 0%,
+       rgb(0,240,16) 2px,
+       transparent
+     );
+  cursor: pointer;
 }
 ul.hierarchy-nested {
   list-style-type: none;
 }
 .hierarchy-caret {
-  /* cursor: pointer; */
   user-select: none;
 }
-.hierarchy-selected {
-  background-color: greenyellow;
-}
 .hierarchy-caret::before {
-  /* content: '\25B6'; */
-  content: '\25E5';
+  /* content: '\25E5'; */
+  content: '\27a4';
   color: black;
   display: inline-block;
   margin-right: 3px;
