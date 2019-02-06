@@ -22,7 +22,6 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
     // Property panel
     definition: extension_properties,
     paint: function($element, layout) {
-
       // Declaring global variables
       var app = qlik.currApp();
 
@@ -188,12 +187,12 @@ function renderChart(tree, element, treeProperties, object_id) {
   })();
 
   // Recursive function to generate HTML from tree
-  function listHtml(object, html) {
+  function listHtml(object, html, object_id) {
     // If Array (i.e. parent)
     if (object instanceof Array) {
       //... and call self for every object
       for (var i = 0; i < object.length; i++) {
-        html = listHtml(object[i], html);
+        html = listHtml(object[i], html, object_id);
       }
       return html;
     } else if (object instanceof Object) {
@@ -213,12 +212,14 @@ function renderChart(tree, element, treeProperties, object_id) {
           html +=
             '<span id="hierarchy-id-' +
             object.qElemNumber +
+            '-' +
+            object_id +
             '" class="hierarchy-caret hierarchy-name" >' +
             object.name +
             '</span>\n';
           html += '<ul class="hierarchy-nested">\n';
           //... and call self for every object
-          html = listHtml(object.children, html);
+          html = listHtml(object.children, html, object_id);
           html += '</ul>\n';
           html += '</li>\n';
           return html;
@@ -226,12 +227,14 @@ function renderChart(tree, element, treeProperties, object_id) {
           html +=
             '<span id="hierarchy-id-' +
             object.qElemNumber +
+            '-' +
+            object_id +
             '" class="hierarchy-caret hierarchy-name hierarchy-caret-down" >' +
             object.name +
             '</span>\n';
           html += '<ul class="hierarchy-nested hierarchy-active">\n';
           //... and call self for every object
-          html = listHtml(object.children, html);
+          html = listHtml(object.children, html, object_id);
           html += '</ul>\n';
           html += '</li>\n';
           return html;
@@ -244,6 +247,8 @@ function renderChart(tree, element, treeProperties, object_id) {
           '">' +
           '<span id="hierarchy-id-' +
           object.qElemNumber +
+          '-' +
+          object_id +
           '" class="hierarchy-name">' +
           object.name +
           '</span>' +
@@ -259,9 +264,14 @@ function renderChart(tree, element, treeProperties, object_id) {
   $(element).append($html);
 
   var html = '<ul id="hierarchyFilerPane">';
-  html = listHtml(tree, html);
+
+
+  debugger;
+
+  html = listHtml(tree, html, object_id);
   html += '</ul>';
 
+  debugger;
   $(element).html(html);
 
   return $(element);
