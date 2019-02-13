@@ -4,27 +4,9 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
   tree
 ) {
   return {
-    initialProperties: {
-      version: 1.0,
-      qListObjectDef: {
-        qShowAlternatives: true,
-        qFrequencyMode: 'V',
-        selectionMode: 'CONFIRM',
-        qInitialDataFetch: [
-          {
-            qWidth: 2,
-            qHeight: 50,
-          },
-        ],
-      },
-      selectionMode: 'CONFIRM',
-    },
-    // Property panel
     definition: extension_properties,
     paint: function($element, layout) {
-      // Declaring global variables
       var app = qlik.currApp();
-
       // Check if all values are correctly set
       if (
         !layout.properties.treeStructure.nodeName ||
@@ -66,7 +48,6 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
         var treeProperties = {
           treeStructure: layout.properties.treeStructure,
         };
-
         // FIXME: Add later support
         var qSortCriteriasContents = {
           qSortByNumeric: treeProperties.treeStructure.nodeDepthSort == 'Ascending' ? 1 : -1,
@@ -78,7 +59,6 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
               {
                 qDef: {
                   qFieldDefs: ['=' + treeProperties.treeStructure.nodeDepth],
-                  // FIXME: Add later support
                   qSortCriterias: [qSortCriteriasContents],
                 },
               },
@@ -90,7 +70,12 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
             qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
           },
           function(reply) {
-            launchTree(reply, $element, 'tree' + layout.qInfo.qId, treeProperties, app);
+            // Generate nodetree
+            var tree = launchTree(reply, $element);
+            // Generate render HTML
+            var element = renderChart(tree, $element, treeProperties, 'tree' + layout.qInfo.qId);
+            // Add eventlisteners
+            addEventsToChart(element, tree, treeProperties, app);
           }
         );
       }
@@ -98,7 +83,7 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
   };
 });
 
-function launchTree(treeData, element, object_id, treeProperties, app) {
+function launchTree(treeData, element) {
   var maxDepth = treeData.qHyperCube.qDimensionInfo[0].qMax;
   var maxDepthExpected = 0;
   if (treeData.qHyperCube.qSize.qcy > 1) {
@@ -144,16 +129,12 @@ function launchTree(treeData, element, object_id, treeProperties, app) {
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][0].qText, //depth
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qElemNumber
           ); //name's qElement
-
           unordered_leafs.push(child);
           iterator++;
         }
       }
     }
-
-    var tree = growTree(unordered_leafs, maxDepth, minDepth);
-    var html = renderChart(tree, element, treeProperties, object_id);
-    addEventsToChart(html, tree, treeProperties, app);
+    return growTree(unordered_leafs, maxDepth, minDepth);
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
@@ -188,6 +169,7 @@ function renderChart(tree, element, treeProperties, object_id) {
 
   // Recursive function to generate HTML from tree
   function listHtml(object, html, object_id) {
+    debugger;
     // If Array (i.e. parent)
     if (object instanceof Array) {
       //... and call self for every object
@@ -265,13 +247,9 @@ function renderChart(tree, element, treeProperties, object_id) {
 
   var html = '<ul id="hierarchyFilerPane">';
 
-
-  debugger;
-
   html = listHtml(tree, html, object_id);
   html += '</ul>';
 
-  debugger;
   $(element).html(html);
 
   return $(element);
