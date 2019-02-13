@@ -302,7 +302,6 @@ function addEventsToChart(element, tree, treeProperties, app) {
         if ($element.hasClass('hierarchy-clicked')) {
           $element.removeClass('hierarchy-clicked');
           // JQuery hack instead of hasAttribute using CSS selector
-          debugger;
           if ($element.is('[data-value]')) {
             var value = parseInt($element.attr('data-value'), 10);
           } else if ($element.parent().is('[data-value]')) {
