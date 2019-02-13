@@ -168,15 +168,13 @@ function renderChart(tree, element, treeProperties, object_id) {
   })();
 
   // Recursive function to generate HTML from tree
-  function listHtml(object, html, object_id) {
-    debugger;
+  function listHtml(object, object_id, appendTo) {
     // If Array (i.e. parent)
     if (object instanceof Array) {
       //... and call self for every object
       for (var i = 0; i < object.length; i++) {
-        html = listHtml(object[i], html, object_id);
+        listHtml(object[i], object_id, appendTo);
       }
-      return html;
     } else if (object instanceof Object) {
       var objId = object.name + '-' + object.depth;
       var objectKeys = Object.keys(object);
@@ -189,44 +187,70 @@ function renderChart(tree, element, treeProperties, object_id) {
         }
       }
       if (hasChildren) {
-        html.append('<li class="hierarchy-item" data-value="' + object.qElemNumber + '">\n');
-        if (collapseLevel === null || object.depth > collapseLevel) {
-          html.append('<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-caret hierarchy-name" >' + object.name + '</span>\n');
-          html.append('<ul class="hierarchy-nested">\n');
-          //... and call self for every object
-          html = listHtml(object.children, html, object_id);
-          html.append('</ul>\n');
-          html.append('</li>\n');
-          return html;
-        } else {
-          html.append('<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-caret hierarchy-name hierarchy-caret-down" >' + object.name + '</span>\n');
-          html.append('<ul class="hierarchy-nested hierarchy-active">\n');
-          //... and call self for every object
-          html = listHtml(object.children, html, object_id);
-          html.append('</ul>\n');
-          html.append('</li>\n');
-          return html;
-        }
+        var $li = $('<li>', {
+          class: 'hierarchy-item',
+          'data-value': object.qElemNumber,
+        });
+        $li.appendTo($('#' + appendTo));
+
+        // Add css class to expand if collapseLevel is set
+        var expandObject = collapseLevel !== null && object.depth <= collapseLevel;
+        var caretDownClass = expandObject ? 'hierarchy-caret-down' : '';
+
+        var $span = $('<span>', {
+          id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
+          class: 'hierarchy-caret hierarchy-name ' + caretDownClass,
+        });
+        $span.text(object.name);
+        $span.appendTo($li);
+
+        // Generate a new append id for child items
+        var appendId = 'append-id-' + object.qElemNumber + '-' + object_id;
+        var hierarchyActiveClass = expandObject ? 'hierarchy-active' : '';
+
+        // Generate new list to hold child items
+        var $ul = $('<ul>', {
+          id: appendId,
+          class: 'hierarchy-nested ' + hierarchyActiveClass,
+        });
+        $ul.appendTo($li);
+
+        //... and call self for every object
+        listHtml(object.children, object_id, appendId);
       } else {
         // Add leaf
-        html.append('<li class="hierarchy-item hierarchy-leaf" data-value="' + object.qElemNumber + '">' + '<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-name">' + object.name + '</span>' + '</li>\n');
-        return html;
+        var $li = $('<li>', {
+          class: 'hierarchy-item hierarchy-leaf',
+          'data-value': object.qElemNumber,
+        });
+        $li.appendTo($('#' + appendTo));
+
+        var $span = $('<span>', {
+          id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
+          class: 'hierarchy-name',
+        });
+        $span.text(object.name);
+        $span.appendTo($li);
       }
     }
   }
+
   $html = $(document.createElement('div'));
   $html.attr('id', object_id);
   $html.addClass('hierarchyFilterPane');
 
-  $html.append('<ul id="hierarchyFilerPane">')
+  var hierarchyId = 'hierarchyFilterPane' + object_id;
 
-  $html = listHtml(tree, $html, appendTo, object_id);
+  $(element).css('overflow', 'auto');
 
-  // $('#hierarchyFilerPane').append('</ul>');
-  $html.append('</ul>');
+  $('<ul>', {
+    id: hierarchyId,
+  }).appendTo($html);
 
   $(element).empty();
   $(element).append($html);
+
+  listHtml(tree, object_id, hierarchyId);
 
   return $(element);
 }
@@ -274,35 +298,34 @@ function addEventsToChart(element, tree, treeProperties, app) {
     .find('.hierarchy-name')
     .click(function(event) {
       if (event.target.id.length > 0) {
-        var element = $('#' + event.target.id);
-        if (element.hasClass('hierarchy-clicked')) {
-          element.removeClass('hierarchy-clicked');
-          if (element[0].hasAttribute('data-value')) {
-            // Value is the same as qElementNum in tree
-            var value = parseInt(element[0].getAttribute('data-value'), 10);
-            var selectedNode = findNodeInTree(tree, value);
-            selectData(selectedNode);
-          } else if (element[0].parentElement.hasAttribute('data-value')) {
-            // Value is the same as qElementNum in tree
-            var value = parseInt(element[0].parentElement.getAttribute('data-value'), 10);
-            var selectedNode = findNodeInTree(tree, value);
-            selectData(selectedNode);
+        var $element = $('#' + event.target.id);
+        if ($element.hasClass('hierarchy-clicked')) {
+          $element.removeClass('hierarchy-clicked');
+          // JQuery hack instead of hasAttribute using CSS selector
+          debugger;
+          if ($element.is('[data-value]')) {
+            var value = parseInt($element.attr('data-value'), 10);
+          } else if ($element.parent().is('[data-value]')) {
+            var value = parseInt($element.parent().attr('data-value'), 10);
           }
+          var selectedNode = findNodeInTree(tree, value);
+          selectData(selectedNode);
         } else {
-          element.addClass('hierarchy-clicked');
+          $element.addClass('hierarchy-clicked');
+          // bind element so it works with timeout
           setTimeout(
             function() {
               if ($(this).hasClass('hierarchy-clicked')) {
                 $(this).removeClass('hierarchy-clicked');
-                var item = $(this)[0];
-                var itemNested = item.parentElement.querySelector('.hierarchy-nested');
-                // Can't expand leaf items
-                if (item !== null && itemNested !== null) {
-                  itemNested.classList.toggle('hierarchy-active');
-                  item.classList.toggle('hierarchy-caret-down');
+                // Check if element is expandable (i.e. has caret class)
+                if ($(this).hasClass('hierarchy-caret')) {
+                  $(this).toggleClass('hierarchy-caret-down');
+                  $(this)
+                    .siblings('.hierarchy-nested')
+                    .toggleClass('hierarchy-active');
                 }
               }
-            }.bind(element),
+            }.bind($element),
             300
           );
         }
