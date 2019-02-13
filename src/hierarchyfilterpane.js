@@ -189,52 +189,27 @@ function renderChart(tree, element, treeProperties, object_id) {
         }
       }
       if (hasChildren) {
-        html += '<li class="hierarchy-item" data-value="' + object.qElemNumber + '">\n';
+        html.append('<li class="hierarchy-item" data-value="' + object.qElemNumber + '">\n');
         if (collapseLevel === null || object.depth > collapseLevel) {
-          html +=
-            '<span id="hierarchy-id-' +
-            object.qElemNumber +
-            '-' +
-            object_id +
-            '" class="hierarchy-caret hierarchy-name" >' +
-            object.name +
-            '</span>\n';
-          html += '<ul class="hierarchy-nested">\n';
+          html.append('<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-caret hierarchy-name" >' + object.name + '</span>\n');
+          html.append('<ul class="hierarchy-nested">\n');
           //... and call self for every object
           html = listHtml(object.children, html, object_id);
-          html += '</ul>\n';
-          html += '</li>\n';
+          html.append('</ul>\n');
+          html.append('</li>\n');
           return html;
         } else {
-          html +=
-            '<span id="hierarchy-id-' +
-            object.qElemNumber +
-            '-' +
-            object_id +
-            '" class="hierarchy-caret hierarchy-name hierarchy-caret-down" >' +
-            object.name +
-            '</span>\n';
-          html += '<ul class="hierarchy-nested hierarchy-active">\n';
+          html.append('<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-caret hierarchy-name hierarchy-caret-down" >' + object.name + '</span>\n');
+          html.append('<ul class="hierarchy-nested hierarchy-active">\n');
           //... and call self for every object
           html = listHtml(object.children, html, object_id);
-          html += '</ul>\n';
-          html += '</li>\n';
+          html.append('</ul>\n');
+          html.append('</li>\n');
           return html;
         }
       } else {
         // Add leaf
-        html +=
-          '<li class="hierarchy-item hierarchy-leaf" data-value="' +
-          object.qElemNumber +
-          '">' +
-          '<span id="hierarchy-id-' +
-          object.qElemNumber +
-          '-' +
-          object_id +
-          '" class="hierarchy-name">' +
-          object.name +
-          '</span>' +
-          '</li>\n';
+        html.append('<li class="hierarchy-item hierarchy-leaf" data-value="' + object.qElemNumber + '">' + '<span id="hierarchy-id-' + object.qElemNumber + '-' + object_id + '" class="hierarchy-name">' + object.name + '</span>' + '</li>\n');
         return html;
       }
     }
@@ -242,15 +217,16 @@ function renderChart(tree, element, treeProperties, object_id) {
   $html = $(document.createElement('div'));
   $html.attr('id', object_id);
   $html.addClass('hierarchyFilterPane');
+
+  $html.append('<ul id="hierarchyFilerPane">')
+
+  $html = listHtml(tree, $html, appendTo, object_id);
+
+  // $('#hierarchyFilerPane').append('</ul>');
+  $html.append('</ul>');
+
   $(element).empty();
   $(element).append($html);
-
-  var html = '<ul id="hierarchyFilerPane">';
-
-  html = listHtml(tree, html, object_id);
-  html += '</ul>';
-
-  $(element).html(html);
 
   return $(element);
 }
