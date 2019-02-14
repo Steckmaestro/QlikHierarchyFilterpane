@@ -10,6 +10,7 @@ Here you can see how it looks in action.
 ![Alt text](/demo-images/example-render.png?raw=true "Example of render")
 
 Closeup on how a rendered filterpane looks
+
 ![Alt text](/demo-images/example-hierarchy.png?raw=true "Closeup of hierarchy")
 
 Configuration is very similar to rvspt's hierarchy extension I did however add an auto expand level function.
