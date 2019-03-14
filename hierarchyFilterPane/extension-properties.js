@@ -12,7 +12,7 @@ define([], function() {
     items: {
       treeStructure: {
         type: 'items',
-        label: 'Tree Structure Definition',
+        label: 'Configuration options',
         items: {
           nodeName: {
             ref: 'properties.treeStructure.nodeName',
@@ -60,7 +60,7 @@ define([], function() {
             label: 'Define a Default Collapse Level',
             type: 'boolean',
             component: 'switch',
-            options: [{ value: true, label: 'Activated' }, { value: false, label: 'Deactivated' }],
+            options: [{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }],
             defaultValue: false,
           },
           collapseLevel: {
@@ -73,6 +73,14 @@ define([], function() {
               return data.properties.treeStructure.defineCollapseLevel;
             },
           },
+          ignoreSelections: {
+            ref: 'properties.treeStructure.ignoreSelections',
+            label: 'Ignore other selections',
+            type: 'boolean',
+            component: 'switch',
+            options: [{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }],
+            defaultValue: false
+          }
         },
       },
     },

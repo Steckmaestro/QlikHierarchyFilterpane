@@ -21,6 +21,9 @@ function growTree(leafs) {
   }
   //Get rootNodes (support for multiple root nodes)
   var rootNodes = findParentlessNodes(cleanedLeafs);
+
+  console.log('Cleaned leafs: ', cleanedLeafs);
+
   //Attach rootNodes to tree
   var tree = [];
 
@@ -29,7 +32,6 @@ function growTree(leafs) {
     // console.log('Temp nodes: ', tempNodes);
     for (j = 0; j < rootNodes.length; j++) {
       var parent = rootNodes[j];
-      // tree = getNestedChildren(cleanedLeafs, parent.parentId);
       tree.push(getNestedChildren(cleanedLeafs, parent.parentId));
     }
   }
@@ -62,7 +64,16 @@ function growTree(leafs) {
         }
       }
       if (!foundParent) {
-        parentlessNodes.push(nodes[n]);
+        //Only add one root node for every parent id
+        var uniqueParent = true;
+        for (t = 0; t < parentlessNodes.length; t++) {
+          if (nodes[n].parentId == parentlessNodes[t].parentId) {
+            uniqueParent = false;
+          }
+        }
+        if (uniqueParent) {
+          parentlessNodes.push(nodes[n]);
+        }
       }
     }
     return parentlessNodes;

@@ -53,6 +53,8 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
           qSortByNumeric: treeProperties.treeStructure.nodeDepthSort == 'Ascending' ? 1 : -1,
         };
 
+        var qIgnoreSelections = treeProperties.treeStructure.ignoreSelections;
+
         app.createCube(
           {
             qDimensions: [
@@ -66,7 +68,7 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.parentNodeID] } },
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.nodeName] } },
             ],
-            qMeasures: [{ qDef: { qDef: '1' } }],
+            qMeasures: [{ qDef: { qDef: qIgnoreSelections ? 'count({1<' + treeProperties.treeStructure.nodeName + '=>}1)' : '1'}}],
             qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
           },
           function(reply) {
