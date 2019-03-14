@@ -91,7 +91,7 @@ function launchTree(treeData, element) {
   }
   var minDepth = treeData.qHyperCube.qDimensionInfo[0].qMin;
   var unordered_leafs = new Array();
-  var node_id = 'global leaf #';
+  var node_id = 'leaf #';
   var iterator = 0;
   var tree_depth, row_nr;
   var load_tree = true;
@@ -134,7 +134,7 @@ function launchTree(treeData, element) {
         }
       }
     }
-    return growTree(unordered_leafs, maxDepth, minDepth);
+    return growTree(unordered_leafs);
   } else {
     //something is missing, better not load the hypercube
     $noDataDiv = $(document.createElement('div'));
