@@ -29,5 +29,9 @@ Check in case it's not working properly:
 Known issues/improvements:
 - Sorting (asc/desc) not working properly as of today
 - Anything that causes rerender resets the tree to the original state (e.g. collapses certain branches)
+- As of now we don't support more than 1000 nodes in your hierarchy.
 
 Hope this is appreciated by someone!
+
+Updates:
+2019-03-14 - Rewrote some code that generates the tree, so selections work more correct. 
