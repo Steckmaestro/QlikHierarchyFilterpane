@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 .hierarchy-name:hover {
   background:
      linear-gradient(
@@ -36,43 +35,4 @@ ul.hierarchy-nested {
   padding-top: 3px;
   padding-bottom: 5px;
   padding-left: 12px;
-=======
-.hierarchy-name:hover {
-  background:
-     linear-gradient(
-       to right,
-       rgb(230, 244, 254) 0%,
-       rgb(230, 244, 254) 2px,
-       transparent
-     );
-  cursor: pointer;
-}
-ul.hierarchy-nested {
-  list-style-type: none;
-}
-.hierarchy-caret {
-  user-select: none;
-}
-.hierarchy-caret::before {
-  content: '\27a4';
-  color: rgb(0, 120, 220);
-  display: inline-block;
-  margin-right: 5px;
-}
-.hierarchy-caret-down::before {
-  transform: rotate(90deg);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.hierarchy-nested {
-  display: none;
-}
-.hierarchy-active {
-  padding-left: 8px;
-  display: block;
-}
-.hierarchy-leaf {
-  padding-top: 3px;
-  padding-bottom: 5px;
-  padding-left: 12px;
->>>>>>> a14ea29a2bb3fae19a999a36bc72916e8a59b506
 }
