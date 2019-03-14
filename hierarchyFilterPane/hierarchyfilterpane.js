@@ -4,8 +4,27 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
   tree
 ) {
   return {
+    initialProperties: {
+      version: 1.0,
+      qListObjectDef: {
+        qShowAlternatives: true,
+        qFrequencyMode: 'V',
+        selectionMode: 'CONFIRM',
+        qInitialDataFetch: [
+          {
+            qWidth: 2,
+            qHeight: 50,
+          },
+        ],
+      },
+    },
+    support: {
+      snapshot: false,
+    },
     definition: extension_properties,
     paint: function($element, layout) {
+      console.log('Paint function called: ', new Date().toString());
+
       var app = qlik.currApp();
       // Check if all values are correctly set
       if (
@@ -68,16 +87,23 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.parentNodeID] } },
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.nodeName] } },
             ],
-            qMeasures: [{ qDef: { qDef: qIgnoreSelections ? 'count({1<' + treeProperties.treeStructure.nodeName + '=>}1)' : '1'}}],
-            qInitialDataFetch: [{ qHeight: 1000, qWidth: 5 }],
+            qMeasures: [{ qDef: { qDef: qIgnoreSelections ? '=sum({1}1)' : '1' } }],
+            qInitialDataFetch: [{ qHeight: 2000, qWidth: 5 }],
           },
           function(reply) {
+            console.log('App createcube callback reply: ', new Date().toString(), reply);
+            $element.empty();
+
+            console.log($element, layout);
+
             // Generate nodetree
             var tree = launchTree(reply, $element);
             // Generate render HTML
             var element = renderChart(tree, $element, treeProperties, 'tree' + layout.qInfo.qId);
             // Add eventlisteners
             addEventsToChart(element, tree, treeProperties, app);
+
+            app.destroySessionObject(reply.qInfo.qId);
           }
         );
       }
@@ -124,9 +150,10 @@ function launchTree(treeData, element) {
         if (treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][0].qText == tree_depth) {
           var child = new node(
             node_id + iterator,
+            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qState, //selection state
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][1].qText, //element_id
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][2].qText, //parent_id
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qText, //name+
+            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qText, //name
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][4].qText, //measure
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][0].qText, //depth
             treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qElemNumber
@@ -197,29 +224,34 @@ function renderChart(tree, element, treeProperties, object_id) {
 
         // Add css class to expand if collapseLevel is set
         var expandObject = collapseLevel !== null && object.depth <= collapseLevel;
-        var caretDownClass = expandObject ? 'hierarchy-caret-down' : '';
+        var caretDownClass = expandObject ? ' hierarchy-caret-down' : '';
+        // Add css class to make green if object is selected
+        var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
 
         var $span = $('<span>', {
           id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
-          class: 'hierarchy-caret hierarchy-name ' + caretDownClass,
+          class: 'hierarchy-caret hierarchy-name' + caretDownClass + hierarchySelectedClass,
         });
         $span.text(object.name);
         $span.appendTo($li);
 
         // Generate a new append id for child items
         var appendId = 'append-id-' + object.qElemNumber + '-' + object_id;
-        var hierarchyActiveClass = expandObject ? 'hierarchy-active' : '';
+        var hierarchyActiveClass = expandObject ? ' hierarchy-active' : '';
 
         // Generate new list to hold child items
         var $ul = $('<ul>', {
           id: appendId,
-          class: 'hierarchy-nested ' + hierarchyActiveClass,
+          class: 'hierarchy-nested' + hierarchyActiveClass,
         });
         $ul.appendTo($li);
 
         //... and call self for every object
         listHtml(object.children, object_id, appendId);
       } else {
+        // Add css class to make green if object is selected
+        var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
+
         // Add leaf
         var $li = $('<li>', {
           class: 'hierarchy-item hierarchy-leaf',
@@ -229,7 +261,7 @@ function renderChart(tree, element, treeProperties, object_id) {
 
         var $span = $('<span>', {
           id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
-          class: 'hierarchy-name',
+          class: 'hierarchy-name' + hierarchySelectedClass,
         });
         $span.text(object.name);
         $span.appendTo($li);
@@ -249,7 +281,6 @@ function renderChart(tree, element, treeProperties, object_id) {
     id: hierarchyId,
   }).appendTo($html);
 
-  $(element).empty();
   $(element).append($html);
 
   listHtml(tree, object_id, hierarchyId);

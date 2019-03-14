@@ -1,7 +1,8 @@
 //create a new node object
-function node(node_id, element_id, parent_id, name, measure, depth, qElemNumber) {
+function node(node_id, node_state, element_id, parent_id, name, measure, depth, qElemNumber) {
   return {
     node_id: node_id,
+    node_state: node_state,
     element_id: element_id,
     parent_id: parent_id == '' ? null : parent_id,
     name: name,
@@ -21,8 +22,6 @@ function growTree(leafs) {
   }
   //Get rootNodes (support for multiple root nodes)
   var rootNodes = findParentlessNodes(cleanedLeafs);
-
-  console.log('Cleaned leafs: ', cleanedLeafs);
 
   //Attach rootNodes to tree
   var tree = [];
@@ -82,6 +81,7 @@ function growTree(leafs) {
     if (node.childs.length > 0)
       return {
         name: node.name,
+        state: node.node_state,
         nodeId: node.element_id,
         parentId: node.parent_id,
         children: node.childs,
@@ -91,6 +91,7 @@ function growTree(leafs) {
       };
     return {
       name: node.name,
+      state: node.node_state,
       nodeId: node.element_id,
       parentId: node.parent_id,
       size: node.measure,

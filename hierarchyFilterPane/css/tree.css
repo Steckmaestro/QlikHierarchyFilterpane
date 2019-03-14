@@ -1,12 +1,10 @@
 .hierarchy-name:hover {
-  background:
-     linear-gradient(
-       to right,
-       rgb(230, 244, 254) 0%,
-       rgb(230, 244, 254) 2px,
-       transparent
-     );
+  background: linear-gradient(to right, rgb(230, 244, 254) 0%, rgb(230, 244, 254) 2px, transparent);
   cursor: pointer;
+}
+.hierarchy-item-selected {
+  border-bottom: 2px solid;
+  border-bottom-color: rgb(68, 196, 76);
 }
 ul.hierarchy-nested {
   list-style-type: none;
@@ -32,7 +30,7 @@ ul.hierarchy-nested {
   display: block;
 }
 .hierarchy-leaf {
-  padding-top: 3px;
+  padding-top: 4px;
   padding-bottom: 5px;
   padding-left: 12px;
 }
