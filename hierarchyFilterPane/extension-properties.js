@@ -55,6 +55,14 @@ define([], function() {
             type: 'string',
             expression: '',
           },
+          selectNodeID: {
+            ref: 'properties.treeStructure.selectNodeID',
+            label: 'Select on Node ID (Default Node Name)',
+            type: 'boolean',
+            component: 'switch',
+            options: [{ value: true, label: 'Enabled' }, { value: false, label: 'Disabled' }],
+            defaultValue: false,
+          },
           defineCollapseLevel: {
             ref: 'properties.treeStructure.defineCollapseLevel',
             label: 'Define a Default Collapse Level',

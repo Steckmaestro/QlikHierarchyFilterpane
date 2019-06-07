@@ -13,19 +13,21 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
         qInitialDataFetch: [
           {
             qWidth: 2,
-            qHeight: 50,
-          },
-        ],
-      },
+            qHeight: 50
+          }
+        ]
+      }
     },
     support: {
-      snapshot: false,
+      snapshot: false
     },
     definition: extension_properties,
     paint: function($element, layout) {
       console.log('Paint function called: ', new Date().toString());
 
       var app = qlik.currApp();
+      var Promise = qlik.Promise;
+
       // Check if all values are correctly set
       if (
         !layout.properties.treeStructure.nodeName ||
@@ -65,49 +67,81 @@ define(['qlik', './extension-properties', './lib/tree', 'css!./css/tree.css'], f
         $element.html(html_text);
       } else {
         var treeProperties = {
-          treeStructure: layout.properties.treeStructure,
+          treeStructure: layout.properties.treeStructure
         };
         // FIXME: Add later support
         var qSortCriteriasContents = {
-          qSortByNumeric: treeProperties.treeStructure.nodeDepthSort == 'Ascending' ? 1 : -1,
+          qSortByNumeric: treeProperties.treeStructure.nodeDepthSort == 'Ascending' ? 1 : -1
         };
 
         var qIgnoreSelections = treeProperties.treeStructure.ignoreSelections;
 
-        app.createCube(
-          {
+        app
+          .createCube({
             qDimensions: [
               {
                 qDef: {
                   qFieldDefs: ['=' + treeProperties.treeStructure.nodeDepth],
-                  qSortCriterias: [qSortCriteriasContents],
-                },
+                  qSortCriterias: [qSortCriteriasContents]
+                }
               },
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.nodeID] } },
               { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.parentNodeID] } },
-              { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.nodeName] } },
+              { qDef: { qFieldDefs: ['=' + treeProperties.treeStructure.nodeName] } }
             ],
-            qMeasures: [{ qDef: { qDef: qIgnoreSelections ? '=sum({1}1)' : '1' } }],
-            qInitialDataFetch: [{ qHeight: 2000, qWidth: 5 }],
-          },
-          function(reply) {
-            console.log('App createcube callback reply: ', new Date().toString(), reply);
+            qMeasures: [{ qDef: { qDef: qIgnoreSelections ? '=sum({1}1)' : '1' } }]
+          })
+          .then(function(model) {
+            return new Promise(function(resolve, reject) {
+              model
+                .getHyperCubeData('/qHyperCubeDef', [{ qTop: 0, qWidth: 5, qLeft: 0, qHeight: 500 }])
+                .then(function(data) {
+                  var columns = model.layout.qHyperCube.qSize.qcx;
+                  var totalHeight = model.layout.qHyperCube.qSize.qcy;
+                  var pageHeight = Math.floor(10000 / columns);
+                  var numberOfPages = Math.ceil(totalHeight / pageHeight);
+                  var hyperCube = model.layout.qHyperCube;
+                  var info = model.layout.qInfo;
+
+                  if (numberOfPages == 1) {
+                    resolve({ data: data[0].qMatrix, qHyperCube: hyperCube, qInfo: info });
+                  } else {
+                    var promises = Array.apply(null, Array(numberOfPages)).map(function(data, index) {
+                      var page = {
+                        qTop: pageHeight * index,
+                        qLeft: 0,
+                        qWidth: columns,
+                        qHeight: pageHeight,
+                        index: index
+                      };
+                      return model.getHyperCubeData('/qHyperCubeDef', [page]);
+                    }, this);
+                    Promise.all(promises).then(function(data) {
+                      var totalData = [];
+                      for (var p = 0; p < data.length; p++) {
+                        for (var k = 0; k < data[p][0].qMatrix.length; k++) {
+                          totalData.push(data[p][0].qMatrix[k]);
+                        }
+                      }
+                      resolve({ data: totalData, qHyperCube: hyperCube, qInfo: info });
+                    });
+                  }
+                });
+            });
+          })
+          .then(function(reply) {
             $element.empty();
-
-            console.log($element, layout);
-
             // Generate nodetree
             var tree = launchTree(reply, $element);
             // Generate render HTML
-            var element = renderChart(tree, $element, treeProperties, 'tree' + layout.qInfo.qId);
+            var element = renderChart(tree, $element, treeProperties, 'tree' + reply.qInfo.qId);
             // Add eventlisteners
             addEventsToChart(element, tree, treeProperties, app);
 
-            app.destroySessionObject(reply.qInfo.qId);
-          }
-        );
+            //app.destroySessionObject(reply.qInfo.qId);
+          });
       }
-    },
+    }
   };
 });
 
@@ -115,7 +149,7 @@ function launchTree(treeData, element) {
   var maxDepth = treeData.qHyperCube.qDimensionInfo[0].qMax;
   var maxDepthExpected = 0;
   if (treeData.qHyperCube.qSize.qcy > 1) {
-    maxDepthExpected = treeData.qHyperCube.qDataPages[0].qMatrix[treeData.qHyperCube.qSize.qcy - 2][0].qText;
+    maxDepthExpected = treeData.data[treeData.data.length - 1][0].qNum;
   }
   var minDepth = treeData.qHyperCube.qDimensionInfo[0].qMin;
   var unordered_leafs = new Array();
@@ -125,11 +159,8 @@ function launchTree(treeData, element) {
   var load_tree = true;
 
   //some check-ups before loading the tree
-  if (treeData.qHyperCube.qDataPages[0].qMatrix.length === 1) {
-    if (
-      treeData.qHyperCube.qDataPages[0].qMatrix[0][0].qIsNull ||
-      treeData.qHyperCube.qDataPages[0].qMatrix[0][1].qIsNull
-    ) {
+  if (treeData.data.length === 1) {
+    if (treeData.data[0][0].qIsNull || treeData.data[0][1].qIsNull) {
       load_tree = false;
     }
   }
@@ -145,18 +176,18 @@ function launchTree(treeData, element) {
   if (load_tree) {
     for (tree_depth = 1; tree_depth <= maxDepth; tree_depth++) {
       //getting to the tree level
-      for (row_nr = 0; row_nr < treeData.qHyperCube.qSize.qcy; row_nr++) {
+      for (row_nr = 0; row_nr < treeData.data.length; row_nr++) {
         //iterating rows to create the tree
-        if (treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][0].qText == tree_depth) {
+        if (treeData.data[row_nr][0].qText == tree_depth) {
           var child = new node(
             node_id + iterator,
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qState, //selection state
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][1].qText, //element_id
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][2].qText, //parent_id
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qText, //name
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][4].qText, //measure
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][0].qText, //depth
-            treeData.qHyperCube.qDataPages[0].qMatrix[row_nr][3].qElemNumber
+            treeData.data[row_nr][3].qState, //selection state
+            treeData.data[row_nr][1].qText, //element_id
+            treeData.data[row_nr][2].qText, //parent_id
+            treeData.data[row_nr][3].qText, //name
+            treeData.data[row_nr][4].qText, //measure
+            treeData.data[row_nr][0].qText, //depth
+            treeData.data[row_nr][3].qElemNumber
           ); //name's qElement
           unordered_leafs.push(child);
           iterator++;
@@ -218,7 +249,7 @@ function renderChart(tree, element, treeProperties, object_id) {
       if (hasChildren) {
         var $li = $('<li>', {
           class: 'hierarchy-item',
-          'data-value': object.qElemNumber,
+          'data-value': object.qElemNumber
         });
         $li.appendTo($('#' + appendTo));
 
@@ -226,11 +257,12 @@ function renderChart(tree, element, treeProperties, object_id) {
         var expandObject = collapseLevel !== null && object.depth <= collapseLevel;
         var caretDownClass = expandObject ? ' hierarchy-caret-down' : '';
         // Add css class to make green if object is selected
-        var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
+        //var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
 
         var $span = $('<span>', {
           id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
-          class: 'hierarchy-caret hierarchy-name' + caretDownClass + hierarchySelectedClass,
+          class: 'hierarchy-caret hierarchy-name' + caretDownClass 
+          //+ hierarchySelectedClass
         });
         $span.text(object.name);
         $span.appendTo($li);
@@ -242,7 +274,7 @@ function renderChart(tree, element, treeProperties, object_id) {
         // Generate new list to hold child items
         var $ul = $('<ul>', {
           id: appendId,
-          class: 'hierarchy-nested' + hierarchyActiveClass,
+          class: 'hierarchy-nested' + hierarchyActiveClass
         });
         $ul.appendTo($li);
 
@@ -250,18 +282,19 @@ function renderChart(tree, element, treeProperties, object_id) {
         listHtml(object.children, object_id, appendId);
       } else {
         // Add css class to make green if object is selected
-        var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
+        //var hierarchySelectedClass = object.state === 'S' ? ' hierarchy-item-selected' : '';
 
         // Add leaf
         var $li = $('<li>', {
           class: 'hierarchy-item hierarchy-leaf',
-          'data-value': object.qElemNumber,
+          'data-value': object.qElemNumber
         });
         $li.appendTo($('#' + appendTo));
 
         var $span = $('<span>', {
           id: 'hierarchy-id-' + object.qElemNumber + '-' + object_id,
-          class: 'hierarchy-name' + hierarchySelectedClass,
+          class: 'hierarchy-name' 
+          //+ hierarchySelectedClass
         });
         $span.text(object.name);
         $span.appendTo($li);
@@ -278,7 +311,7 @@ function renderChart(tree, element, treeProperties, object_id) {
   $(element).css('overflow', 'auto');
 
   $('<ul>', {
-    id: hierarchyId,
+    id: hierarchyId
   }).appendTo($html);
 
   $(element).append($html);
@@ -289,25 +322,34 @@ function renderChart(tree, element, treeProperties, object_id) {
 }
 
 function addEventsToChart(element, tree, treeProperties, app) {
+  var qSelectNodeID = treeProperties.treeStructure.selectNodeID;
+
   function selectData(node) {
-    var names = [];
-    var nameIdx = [];
-    var getNodeNames = function(node) {
-      names.push({
-        qText: node.name,
-      });
-      nameIdx.push(node.qElemNumber);
+    var values = [];
+    var getNodeIDs = function(node) {
+      if (qSelectNodeID) {
+        values.push(parseInt(node.nodeId));
+      } else {
+        values.push({
+          qText: node.name,
+        });
+      }
       if (node.children) {
         for (var i = 0; i != node.children.length; i++) {
-          getNodeNames(node.children[i]);
+          getNodeIDs(node.children[i]);
         }
       }
-      return names;
+      return values;
     };
-    var selectedElements = getNodeNames(node);
-    var nodeNameField = app.field(treeProperties.treeStructure.nodeName);
-    nodeNameField.clear();
-    nodeNameField.selectValues(selectedElements, false, false);
+    var selectedElements = getNodeIDs(node);
+    var nodeField;
+    if (qSelectNodeID) {
+      nodeField = app.field(treeProperties.treeStructure.nodeID);
+    } else {
+      nodeField = app.field(treeProperties.treeStructure.nodeName);
+    }
+    nodeField.clear();
+    nodeField.selectValues(selectedElements, false, true);
   }
 
   function findNodeInTree(node, qElemNbr) {

@@ -20,22 +20,26 @@ Configuration is very similar to rvspt's hierarchy extension I did however add a
 This is the demo hierarchy table i used to test my extension (also included in the demo app)
 ![Alt text](/demo-images/hierarchy-table.png?raw=true "Example of hierarchy table")
 
-2019-03-14:
+Changelog:
+2019-03-14
 Added new select highlight
 ![Alt text](/demo-images/high-light.png?raw=true "Example of hierarchy table")
+
+2019-06-07
+Performance rework on the creation of the datamodell. Now supports more than 1000 nodes. I have however realised that there are still performance issues with very large nodetrees because the rendering/painting is not yet optimised.
 
 Tested in Chrome, Firefox, IE11.
 
 Check in case it's not working properly:
 - Make sure to properly specify (case sensitive) column names
-- Make sure ID/Level columns are valid int.
+- Make sure ID/Level columns are valid integers.
 - Make sure root element has null-value as parentId
 2019-03-14: Not sure if this applies anymore.
 
 Known issues/improvements:
 - Sorting (asc/desc) not working properly as of today
-- Anything that causes rerender resets the tree to the original state (e.g. collapses certain branches)
-- As of now we don't support more than 1000 nodes in your hierarchy.
+- As of now we don't support more than 1000 nodes in your hierarchy. (FIXED 2019-06-07)
+- Very large nodetrees (2000+ nodes causes poor rendering/paint performance)
 
 Hope this is appreciated by someone!
 
@@ -43,3 +47,7 @@ Updates:
 2019-03-14:
   - Rewrote some code that generates the tree, so selections work more correct. 
   - Added selection highlighting and new configuration options to ignore selections on other columns.
+
+2019-06-07:
+  - Removed selection highlighting because of rendering issues
+  - Added async generation of larger nodetrees (now support 2000+ nodes)
